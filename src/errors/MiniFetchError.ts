@@ -1,8 +1,15 @@
-import type { MiniFetchMethod } from '../types/MiniFetch'
+import type { MiniFetchMethodType } from '../types/MiniFetch'
 
-export class HttpError extends Error {
+export class RequestError extends Error {
+  constructor(message: string) {
+    super(`Request failed with Error: ${message}`)
+    this.name = 'RequestError'
+  }
+}
+
+export class HttpError extends RequestError {
   constructor(
-    public method: MiniFetchMethod,
+    public method: MiniFetchMethodType,
     public url: string,
     public status: number,
     public response?: Response,
@@ -12,20 +19,13 @@ export class HttpError extends Error {
   }
 }
 
-export class TimeoutError extends Error {
+export class TimeoutError extends RequestError {
   constructor(
-    public method: MiniFetchMethod,
+    public method: MiniFetchMethodType,
     public url: string,
     public timeout: number,
   ) {
     super(`Request timed out after ${timeout}ms: ${method} ${url}`)
     this.name = 'TimeoutError'
-  }
-}
-
-export class FetchError extends Error {
-  constructor(message: string) {
-    super(`Request failed with Fetch Error: ${message}`)
-    this.name = 'FetchError'
   }
 }

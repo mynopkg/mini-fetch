@@ -1,5 +1,5 @@
 import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
-import { HttpError, TimeoutError, FetchError } from '../errors/MiniFetchError'
+import { HttpError, TimeoutError, RequestError } from '../errors/MiniFetchError'
 import { isSerializable } from '../utils/bodySerializer'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -8,21 +8,32 @@ export async function miniFetch<T = any>(
   options?: MiniFetchOptions,
 ): Promise<MiniFetchResponse<T>> {
   const {
-    autoParseJson = true,
+    responseType = 'json',
     timeout = 0,
     method = 'GET',
     body,
     headers,
+    signal: externalSignal,
     ...rest
   } = options || {}
 
-  const abortController = new AbortController()
+  const abortController = timeout > 0 ? new AbortController() : null
   let abortTimer: ReturnType<typeof setTimeout> | null = null
-  if (timeout > 0) {
+  if (abortController) {
     abortTimer = setTimeout(() => abortController.abort(), timeout)
   }
 
   try {
+    const signal = (() => {
+      if (abortController && externalSignal) {
+        if (typeof AbortSignal.any !== 'function') {
+          throw new RequestError('AbortSignal.any is not supported in this runtime')
+        }
+        return AbortSignal.any([abortController.signal, externalSignal])
+      }
+      return abortController?.signal ?? externalSignal
+    })()
+
     const mergedHeaders = new Headers(headers)
     let requestBody: BodyInit | undefined
     if (method !== 'GET' && body !== undefined) {
@@ -40,7 +51,7 @@ export async function miniFetch<T = any>(
       method,
       headers: mergedHeaders,
       body: requestBody,
-      signal: abortController.signal,
+      signal,
       ...rest,
     })
 
@@ -48,18 +59,35 @@ export async function miniFetch<T = any>(
       throw new HttpError(method, url, response.status)
     }
 
-    const data = autoParseJson ? await response.json() : undefined
+    let data: T | undefined
+    if (responseType === 'json') {
+      data = await response.json()
+    } else if (responseType === 'blob') {
+      data = (await response.blob()) as T
+    } else if (responseType === 'text') {
+      data = (await response.text()) as T
+    } else if (responseType === 'arrayBuffer') {
+      data = (await response.arrayBuffer()) as T
+    } else {
+      throw new RequestError(`Unsupported responseType: ${responseType}`)
+    }
+
     const miniResponse: MiniFetchResponse<T> = Object.assign(response, { data })
     return miniResponse
   } catch (error: unknown) {
-    if (!(error instanceof Error)) {
+    if (!(error instanceof Error) || error instanceof RequestError) {
       throw error
     }
     if (error.name === 'AbortError' || error.message.includes('aborted')) {
-      throw new TimeoutError(method, url, timeout)
+      if (timeout > 0 && abortController?.signal.aborted) {
+        throw new TimeoutError(method, url, timeout)
+      }
+      throw error
     }
-    throw new FetchError(error.message)
+    throw new RequestError(error.message)
   } finally {
-    if (abortTimer !== null) clearTimeout(abortTimer)
+    if (abortTimer !== null) {
+      clearTimeout(abortTimer)
+    }
   }
 }
