@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { miniFetch } from '../../src/core/miniFetch'
@@ -15,7 +17,7 @@ describe('miniFetch', () => {
   afterEach(() => {
     vi.useRealTimers() // fake timer 비활성화
   })
-  // 성공 응답 검증
+
   it('should return data on successful response', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -25,27 +27,86 @@ describe('miniFetch', () => {
     } as Response)
 
     const response = await miniFetch<FakeResponse>('https://fake-url.com/')
-    expect(response.data?.message).toBe('hello')
+    expect(response.data).toEqual({ message: 'hello' })
     expect(response.ok).toBe(true)
     expect(response.status).toBe(200)
   })
-  // autoParseJson 옵션 false일 때 data가 undefined인지 검증
-  it('should return undefined data when autoParse is false', async () => {
+
+  it('should return data when responseType is "json"', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ message: 'hello' }),
-      text: async () => 'hello',
     } as Response)
 
     const response = await miniFetch<FakeResponse>('https://fake-url.com/', {
-      autoParseJson: false,
+      responseType: 'json',
     })
-    expect(response.data).toBeUndefined()
+    expect(response.data).toEqual({ message: 'hello' })
     expect(response.ok).toBe(true)
     expect(response.status).toBe(200)
   })
-  // timeout 발생 시 TimeoutError가 throw 되는지 검증
+
+  it('should return data when responseType is "text"', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => 'hello',
+    } as Response)
+
+    const response = await miniFetch<string>('https://fake-url.com/', {
+      responseType: 'text',
+    })
+    expect(response.data).toBe('hello')
+    expect(response.ok).toBe(true)
+    expect(response.status).toBe(200)
+  })
+
+  it('should return data when responseType is "blob"', async () => {
+    const fakeBlob = new Blob(['hello'], { type: 'text/plain' })
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => fakeBlob,
+    } as Response)
+
+    const response = await miniFetch<Blob>('https://fake-url.com/', {
+      responseType: 'blob',
+    })
+    expect(response.data).toBeInstanceOf(Blob)
+    expect(response.data).toBe(fakeBlob)
+    expect(response.status).toBe(200)
+  })
+
+  it('should return data when responseType is "arrayBuffer"', async () => {
+    const fakeBuffer = new ArrayBuffer(8)
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => fakeBuffer,
+    } as Response)
+
+    const response = await miniFetch<ArrayBuffer>('https://fake-url.com/', {
+      responseType: 'arrayBuffer',
+    })
+    expect(response.data).toBeInstanceOf(ArrayBuffer)
+    expect(response.data).toBe(fakeBuffer)
+    expect(response.status).toBe(200)
+  })
+
+  it('should throw FetchError on unsupported responseTypes', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    } as Response)
+
+    await expect(
+      miniFetch('https://fake-url.com/', {
+        responseType: 'xml' as any,
+      }),
+    ).rejects.toThrow(/Unsupported responseType/)
+  })
+
   it('should reject with TimeoutError when request times out', async () => {
     globalThis.fetch = vi.fn().mockImplementation(
       (_url, { signal }) =>
@@ -64,7 +125,7 @@ describe('miniFetch', () => {
 
     await expect(fetchPromise).rejects.toThrow(/Request timed out/i)
   })
-  // HTTP 에러 발생 시 HttpError가 throw 되는지 검증
+
   it('should reject with HttpError on HTTP error response', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,

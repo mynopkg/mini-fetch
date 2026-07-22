@@ -1,8 +1,8 @@
-import type { MiniFetchMethod } from '../types/MiniFetch'
+import type { MiniFetchMethodType } from '../types/MiniFetch'
 
 export class HttpError extends Error {
   constructor(
-    public method: MiniFetchMethod,
+    public method: MiniFetchMethodType,
     public url: string,
     public status: number,
     public response?: Response,
@@ -14,7 +14,7 @@ export class HttpError extends Error {
 
 export class TimeoutError extends Error {
   constructor(
-    public method: MiniFetchMethod,
+    public method: MiniFetchMethodType,
     public url: string,
     public timeout: number,
   ) {

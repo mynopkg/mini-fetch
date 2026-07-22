@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type MiniFetchMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer'
 
-export interface MiniFetchOptions extends MiniFetchRequest {
-  autoParseJson?: boolean
+export interface MiniFetchOptions<T = any> extends MiniFetchRequest<T> {
+  responseType?: MiniFetchResponseType
   timeout?: number
 }
 
-export interface MiniFetchRequest<T = any> extends Omit<RequestInit, 'body'> {
+export interface MiniFetchRequest<T = any> extends Omit<RequestInit, 'body' | 'method'> {
+  method?: MiniFetchMethodType
   body?: T
 }
 
