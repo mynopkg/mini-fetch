@@ -1,5 +1,5 @@
 import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
-import { HttpError, TimeoutError, FetchError } from '../errors/MiniFetchError'
+import { HttpError, TimeoutError, RequestError } from '../errors/MiniFetchError'
 import { isSerializable } from '../utils/bodySerializer'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,12 +23,17 @@ export async function miniFetch<T = any>(
     abortTimer = setTimeout(() => abortController.abort(), timeout)
   }
 
-  const signal =
-    abortController && externalSignal
-      ? AbortSignal.any([abortController.signal, externalSignal])
-      : (abortController?.signal ?? externalSignal)
-
   try {
+    const signal = (() => {
+      if (abortController && externalSignal) {
+        if (typeof AbortSignal.any !== 'function') {
+          throw new RequestError('AbortSignal.any is not supported in this runtime')
+        }
+        return AbortSignal.any([abortController.signal, externalSignal])
+      }
+      return abortController?.signal ?? externalSignal
+    })()
+
     const mergedHeaders = new Headers(headers)
     let requestBody: BodyInit | undefined
     if (method !== 'GET' && body !== undefined) {
@@ -64,13 +69,13 @@ export async function miniFetch<T = any>(
     } else if (responseType === 'arrayBuffer') {
       data = (await response.arrayBuffer()) as T
     } else {
-      throw new FetchError(`Unsupported responseType: ${responseType}`)
+      throw new RequestError(`Unsupported responseType: ${responseType}`)
     }
 
     const miniResponse: MiniFetchResponse<T> = Object.assign(response, { data })
     return miniResponse
   } catch (error: unknown) {
-    if (!(error instanceof Error) || error instanceof HttpError) {
+    if (!(error instanceof Error) || error instanceof RequestError) {
       throw error
     }
     if (error.name === 'AbortError' || error.message.includes('aborted')) {
@@ -79,7 +84,7 @@ export async function miniFetch<T = any>(
       }
       throw error
     }
-    throw new FetchError(error.message)
+    throw new RequestError(error.message)
   } finally {
     if (abortTimer !== null) {
       clearTimeout(abortTimer)

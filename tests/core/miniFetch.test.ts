@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import type { MiniFetchResponseType } from '../../src/types/MiniFetch'
 import { miniFetch } from '../../src/core/miniFetch'
 import { TimeoutError } from '../../src/errors/MiniFetchError'
 
@@ -102,7 +101,7 @@ describe('miniFetch', () => {
 
     await expect(
       miniFetch('https://fake-url.com/', {
-        responseType: 'xml' as any,
+        responseType: 'xml' as unknown as MiniFetchResponseType,
       }),
     ).rejects.toThrow(/Unsupported responseType/)
   })
