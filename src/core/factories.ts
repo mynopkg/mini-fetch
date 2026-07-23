@@ -5,7 +5,7 @@ import { miniFetch } from './miniFetch'
 
 export function createMiniFetch(baseUrl?: string) {
   async function request<T = any>(url: string, options?: MiniFetchOptions) {
-    const mergedUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}` : url
+    const mergedUrl = baseUrl ? `${baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}` : url
     return miniFetch<T>(mergedUrl, options)
   }
 
