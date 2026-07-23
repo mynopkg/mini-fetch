@@ -2,7 +2,7 @@ import type { MiniFetchMethodType } from '../types/MiniFetch'
 
 export class RequestError extends Error {
   constructor(message: string) {
-    super(`Request failed with Error: ${message}`)
+    super(message)
     this.name = 'RequestError'
   }
 }
