@@ -118,3 +118,8 @@ try {
 ## License
 
 ISC
+
+## Contributing
+
+Issues and pull requests are welcome!
+If you find a bug or have a feature request, please open an issue on [GitHub](https://github.com/mynopkg/mini-fetch/issues).
