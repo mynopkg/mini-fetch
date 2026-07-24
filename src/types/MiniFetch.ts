@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer'
 

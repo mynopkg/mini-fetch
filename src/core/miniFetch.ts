@@ -2,7 +2,6 @@ import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
 import { HttpError, TimeoutError, RequestError } from '../errors/MiniFetchError'
 import { isSerializable } from '../utils/bodySerializer'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function miniFetch<T = any>(
   url: string,
   options?: MiniFetchOptions,

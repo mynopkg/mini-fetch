@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { MiniFetchOptions } from '../types/MiniFetch'
 
 import { miniFetch } from './miniFetch'
