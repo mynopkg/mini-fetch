@@ -55,7 +55,7 @@ export async function miniFetch<T = any>(
     })
 
     if (!response.ok) {
-      throw new HttpError(method, url, response.status)
+      throw new HttpError(method, url, response.status, response)
     }
 
     let data: T | undefined

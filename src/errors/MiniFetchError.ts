@@ -12,9 +12,9 @@ export class HttpError extends RequestError {
     public method: MiniFetchMethodType,
     public url: string,
     public status: number,
-    public response?: Response,
+    public response: Response,
   ) {
-    super(`Request failed with HTTP ${status}: ${method} ${url}`)
+    super(`Request failed with HTTP ${status} ${response.statusText}: ${method} ${url}`)
     this.name = 'HttpError'
   }
 }
