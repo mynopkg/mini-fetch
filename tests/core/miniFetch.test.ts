@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import type { MiniFetchResponseType } from '../../src/types/MiniFetch'
 import { miniFetch } from '../../src/core/miniFetch'
-import { TimeoutError } from '../../src/errors/MiniFetchError'
+import { TimeoutError } from '../../src/errors'
 
 interface FakeResponse {
   message: string
