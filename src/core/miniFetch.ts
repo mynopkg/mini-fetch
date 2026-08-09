@@ -1,6 +1,7 @@
 import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
-import { HttpError, TimeoutError, RequestError } from '../errors/MiniFetchError'
+import { HttpError, TimeoutError, RequestError } from '../errors'
 import { isSerializable } from '../utils/bodySerializer'
+import { UnsupportedRuntimeError } from '../errors/UnsupportedRuntimeError'
 
 export async function miniFetch<T = any>(
   url: string,
@@ -26,7 +27,7 @@ export async function miniFetch<T = any>(
     const signal = (() => {
       if (abortController && externalSignal) {
         if (typeof AbortSignal.any !== 'function') {
-          throw new RequestError('AbortSignal.any is not supported in this runtime')
+          throw new UnsupportedRuntimeError('AbortSignal.any')
         }
         return AbortSignal.any([abortController.signal, externalSignal])
       }
@@ -55,7 +56,7 @@ export async function miniFetch<T = any>(
     })
 
     if (!response.ok) {
-      throw new HttpError(method, url, response.status)
+      throw new HttpError(method, url, response.status, response)
     }
 
     let data: T | undefined

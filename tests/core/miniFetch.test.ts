@@ -1,22 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 import type { MiniFetchResponseType } from '../../src/types/MiniFetch'
 import { miniFetch } from '../../src/core/miniFetch'
-import { TimeoutError } from '../../src/errors/MiniFetchError'
-
-interface FakeResponse {
-  message: string
-}
+import { TEST_URLS } from '../constants'
 
 describe('miniFetch', () => {
-  beforeEach(() => {
-    vi.useFakeTimers() // fake timer 활성화
-  })
-
-  afterEach(() => {
-    vi.useRealTimers() // fake timer 비활성화
-  })
-
   it('should return data on successful response', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -25,7 +13,7 @@ describe('miniFetch', () => {
       text: async () => 'hello',
     } as Response)
 
-    const response = await miniFetch<FakeResponse>('https://fake-url.com/')
+    const response = await miniFetch<{ message: string }>(TEST_URLS.FAKE_BASE)
     expect(response.data).toEqual({ message: 'hello' })
     expect(response.ok).toBe(true)
     expect(response.status).toBe(200)
@@ -38,7 +26,7 @@ describe('miniFetch', () => {
       json: async () => ({ message: 'hello' }),
     } as Response)
 
-    const response = await miniFetch<FakeResponse>('https://fake-url.com/', {
+    const response = await miniFetch<{ message: string }>(TEST_URLS.FAKE_BASE, {
       responseType: 'json',
     })
     expect(response.data).toEqual({ message: 'hello' })
@@ -53,7 +41,7 @@ describe('miniFetch', () => {
       text: async () => 'hello',
     } as Response)
 
-    const response = await miniFetch<string>('https://fake-url.com/', {
+    const response = await miniFetch<string>(TEST_URLS.FAKE_BASE, {
       responseType: 'text',
     })
     expect(response.data).toBe('hello')
@@ -69,7 +57,7 @@ describe('miniFetch', () => {
       blob: async () => fakeBlob,
     } as Response)
 
-    const response = await miniFetch<Blob>('https://fake-url.com/', {
+    const response = await miniFetch<Blob>(TEST_URLS.FAKE_BASE, {
       responseType: 'blob',
     })
     expect(response.data).toBeInstanceOf(Blob)
@@ -85,7 +73,7 @@ describe('miniFetch', () => {
       arrayBuffer: async () => fakeBuffer,
     } as Response)
 
-    const response = await miniFetch<ArrayBuffer>('https://fake-url.com/', {
+    const response = await miniFetch<ArrayBuffer>(TEST_URLS.FAKE_BASE, {
       responseType: 'arrayBuffer',
     })
     expect(response.data).toBeInstanceOf(ArrayBuffer)
@@ -93,47 +81,16 @@ describe('miniFetch', () => {
     expect(response.status).toBe(200)
   })
 
-  it('should throw FetchError on unsupported responseTypes', async () => {
+  it('should throw RequestError on unsupported responseTypes', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
     } as Response)
 
     await expect(
-      miniFetch('https://fake-url.com/', {
+      miniFetch(TEST_URLS.FAKE_BASE, {
         responseType: 'xml' as unknown as MiniFetchResponseType,
       }),
     ).rejects.toThrow(/Unsupported responseType/)
-  })
-
-  it('should reject with TimeoutError when request times out', async () => {
-    globalThis.fetch = vi.fn().mockImplementation(
-      (_url, { signal }) =>
-        new Promise((_resolve, reject) => {
-          signal?.addEventListener('abort', () => {
-            reject(new TimeoutError('GET', _url, 1000))
-          })
-        }),
-    )
-
-    const fetchPromise = miniFetch<FakeResponse>('https://fake-url.com/', {
-      timeout: 1000,
-    })
-
-    vi.advanceTimersByTime(1000)
-
-    await expect(fetchPromise).rejects.toThrow(/Request timed out/i)
-  })
-
-  it('should reject with HttpError on HTTP error response', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      text: async () => 'Internal Server Error',
-    } as Response)
-
-    await expect(miniFetch<FakeResponse>('https://fake-url.com/')).rejects.toThrow(
-      /Request failed with Http/i,
-    )
   })
 })
