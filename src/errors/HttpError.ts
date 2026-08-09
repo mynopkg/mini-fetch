@@ -9,7 +9,11 @@ export class HttpError extends RequestError {
     public status: number,
     public response: Response,
   ) {
-    super(`Request failed with HTTP ${status} ${response.statusText}: ${method} ${url}`)
+    const statusText = response.statusText ?? ''
+    const message = statusText
+      ? `Request failed with HTTP ${status} ${statusText}: ${method} ${url}`
+      : `Request failed with HTTP ${status}: ${method} ${url}`
+    super(message)
     this.name = 'HttpError'
   }
 }
