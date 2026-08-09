@@ -57,7 +57,7 @@ describe('HttpError', () => {
     expect(error.name).toBe('HttpError')
   })
 
-  it('should throw on HTTP error response', () => {
+  it('should include HTTP status and error details in message', () => {
     const mockResponse = {
       ok: false,
       status: 500,

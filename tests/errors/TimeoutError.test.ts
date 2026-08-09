@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { TimeoutError } from '../../src/errors'
-import { RequestError } from '../../src/errors'
+import { TimeoutError, RequestError } from '../../src/errors'
 import { TEST_URLS } from '../constants'
 
 describe('TimeoutError', () => {

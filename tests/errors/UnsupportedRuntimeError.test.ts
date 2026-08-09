@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { UnsupportedRuntimeError } from '../../src/errors'
+import { UnsupportedRuntimeError } from '../../src/errors/UnsupportedRuntimeError'
 
 describe('UnsupportedRuntimeError', () => {
   it('should set the correct error message', () => {
