@@ -31,13 +31,7 @@ export default tseslint.config([
     },
   },
   {
-    files: [
-      '**/src/core/factories.ts',
-      '**/src/core/helpers.ts',
-      '**/src/core/miniFetch.ts',
-      '**/src/types/MiniFetch.ts',
-      '**/tests/**/*.ts',
-    ],
+    files: ['**/tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },
