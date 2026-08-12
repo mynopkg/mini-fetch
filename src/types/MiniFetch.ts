@@ -1,24 +1,25 @@
-export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'HEAD'
 export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer'
 
-export interface MiniFetchOptions<T = any> extends MiniFetchRequest<T> {
+export interface MiniFetchRequest extends Omit<RequestInit, 'body' | 'method'> {
+  body?: BodyInit
+  json?: Record<string, unknown> | unknown[]
+}
+
+export interface MiniFetchResponse<T = unknown> extends Response {
+  data?: T | string | Blob | ArrayBuffer
+}
+
+export interface MiniFetchOptions extends MiniFetchRequest {
   responseType?: MiniFetchResponseType
+  method?: MiniFetchMethodType
   timeout?: number
 }
 
-export interface MiniFetchRequest<T = any> extends Omit<RequestInit, 'body' | 'method'> {
-  method?: MiniFetchMethodType
-  body?: T
-}
-
-export interface MiniFetchResponse<T = any> extends Response {
-  data?: T
-}
-
 export interface MiniFetchApi {
-  get: <T = any>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  post: <T = any>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  patch: <T = any>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  put: <T = any>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  delete: <T = any>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
+  get: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
+  post: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
+  patch: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
+  put: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
+  delete: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
 }
