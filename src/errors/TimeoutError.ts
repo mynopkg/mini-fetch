@@ -1,4 +1,4 @@
-import type { MiniFetchMethodType } from '../types/MiniFetch'
+import type { MiniFetchMethodType } from '@/types/MiniFetch'
 
 import { RequestError } from './RequestError'
 

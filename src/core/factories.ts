@@ -1,4 +1,4 @@
-import type { MiniFetchOptions } from '../types/MiniFetch'
+import type { MiniFetchOptions } from '@/types/MiniFetch'
 
 import { miniFetch } from './miniFetch'
 

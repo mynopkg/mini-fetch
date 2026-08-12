@@ -1,8 +1,10 @@
+import type { MiniFetchResponseType } from '@/types/MiniFetch'
+
 import { describe, it, expect, vi } from 'vitest'
 
-import type { MiniFetchResponseType } from '../../src/types/MiniFetch'
-import { miniFetch } from '../../src/core/miniFetch'
 import { TEST_URLS } from '../constants'
+
+import { miniFetch } from '@/core/miniFetch'
 
 describe('miniFetch', () => {
   it('should return data on successful response', async () => {

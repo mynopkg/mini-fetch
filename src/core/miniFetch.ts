@@ -1,5 +1,6 @@
-import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
-import { HttpError, TimeoutError, RequestError } from '../errors'
+import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
+
+import { HttpError, TimeoutError, RequestError } from '@/errors'
 
 export async function miniFetch<T = unknown>(
   url: string,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { RequestError } from '../../src/errors'
+import { RequestError } from '@/errors'
 
 describe('RequestError', () => {
   it('should create an instance with correct message', () => {
