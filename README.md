@@ -1,6 +1,6 @@
 # @mynopkg/mini-fetch
 
-A minimal, type-safe TypeScript fetch wrapper with timeout, response type parsing, and structured error handling.
+A minimal, type-safe fetch wrapper with timeout, response type parsing, and structured error handling.
 
 ## Features
 
@@ -47,40 +47,63 @@ const buffer = await miniFetch<ArrayBuffer>(url, { responseType: 'arrayBuffer' }
 await miniFetch(url, { timeout: 3000 }) // throws TimeoutError after 3s
 ```
 
+### Custom AbortSignal
+
+```typescript
+const controller = new AbortController()
+
+// Abort the request manually
+setTimeout(() => controller.abort(), 5000)
+
+try {
+  await miniFetch(url, { signal: controller.signal })
+} catch (e) {
+  if (e instanceof RequestError) {
+    console.log('Request was aborted')
+  }
+}
+```
+
 ### POST with body
 
 ```typescript
 // Plain objects are automatically serialized to JSON
 await miniFetch(url, {
   method: 'POST',
-  body: { name: 'Jane Doe' },
+  json: { name: 'Jane Doe' },
 })
 
-// FormData, Blob, ArrayBuffer are passed through as-is
+// FormData, Blob, ArrayBuffer are passed as body
 await miniFetch(url, {
   method: 'POST',
   body: new FormData(),
 })
 ```
 
-### `miniFetchApi` — pre-built instance
+### `miniFetchClient` — pre-configured instance with helper methods
 
 ```typescript
-import { miniFetchApi } from '@mynopkg/mini-fetch'
+import { miniFetchClient } from '@mynopkg/mini-fetch'
 
-const res = await miniFetchApi.get<User[]>('https://api.example.com/users')
-await miniFetchApi.post('https://api.example.com/users', { body: { name: 'Jane Doe' } })
+const res = await miniFetchClient.get<User[]>('https://api.example.com/users')
+await miniFetchClient.post('https://api.example.com/users', { json: { name: 'Jane Doe' } })
+
+// Create a new client instance with baseUrl
+const api = miniFetchClient.create('https://api.example.com')
+await api.get<User[]>('/users')
+await api.post('/users', { json: { name: 'Jane Doe' } })
+await api.delete('/users/1')
 ```
 
-### `createMiniFetch` — factory with baseUrl
+### `MiniFetchClient` — custom client with baseUrl
 
 ```typescript
-import { createMiniFetch } from '@mynopkg/mini-fetch'
+import { MiniFetchClient } from '@mynopkg/mini-fetch'
 
-const api = createMiniFetch('https://api.example.com')
+const api = new MiniFetchClient('https://api.example.com')
 
 await api.get<User[]>('/users')
-await api.post('/users', { body: { name: 'Jane Doe' } })
+await api.post('/users', { json: { name: 'Jane Doe' } })
 await api.delete('/users/1')
 ```
 
