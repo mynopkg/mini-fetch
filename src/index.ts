@@ -1,4 +1,3 @@
 export { miniFetch } from './core/miniFetch'
-export { createMiniFetch } from './core/factories'
-export { miniFetchApi } from './core/api'
+export { miniFetchClient, MiniFetchClient } from './core/client'
 export { HttpError, TimeoutError, RequestError } from './errors'
