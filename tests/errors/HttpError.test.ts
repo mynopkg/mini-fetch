@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
-import { HttpError } from '../../src/errors'
 import { TEST_URLS } from '../constants'
+
+import { HttpError } from '@/errors'
 
 describe('HttpError', () => {
   it('should set the correct error message with statusText', () => {

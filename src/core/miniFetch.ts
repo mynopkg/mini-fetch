@@ -1,9 +1,8 @@
-import type { MiniFetchOptions, MiniFetchResponse } from '../types/MiniFetch'
-import { HttpError, TimeoutError, RequestError } from '../errors'
-import { isSerializable } from '../utils/bodySerializer'
-import { UnsupportedRuntimeError } from '../errors/UnsupportedRuntimeError'
+import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
 
-export async function miniFetch<T = any>(
+import { HttpError, TimeoutError, RequestError } from '@/errors'
+
+export async function miniFetch<T = unknown>(
   url: string,
   options?: MiniFetchOptions,
 ): Promise<MiniFetchResponse<T>> {
@@ -11,83 +10,93 @@ export async function miniFetch<T = any>(
     responseType = 'json',
     timeout = 0,
     method = 'GET',
-    body,
     headers,
-    signal: externalSignal,
+    body,
+    json,
+    signal: userSignal,
     ...rest
   } = options || {}
 
-  const abortController = timeout > 0 ? new AbortController() : null
-  let abortTimer: ReturnType<typeof setTimeout> | null = null
-  if (abortController) {
-    abortTimer = setTimeout(() => abortController.abort(), timeout)
-  }
-
   try {
-    const signal = (() => {
-      if (abortController && externalSignal) {
-        if (typeof AbortSignal.any !== 'function') {
-          throw new UnsupportedRuntimeError('AbortSignal.any')
-        }
-        return AbortSignal.any([abortController.signal, externalSignal])
-      }
-      return abortController?.signal ?? externalSignal
-    })()
-
     const mergedHeaders = new Headers(headers)
     let requestBody: BodyInit | undefined
-    if (method !== 'GET' && body !== undefined) {
-      if (isSerializable(body)) {
-        requestBody = JSON.stringify(body)
-        if (!mergedHeaders.has('Content-Type')) {
-          mergedHeaders.set('Content-Type', 'application/json')
-        }
-      } else {
-        requestBody = body as BodyInit
+
+    if (body !== undefined && json !== undefined) {
+      throw new RequestError(
+        "Cannot specify both 'body' and 'json'. Use only one or leave both undefined.",
+      )
+    }
+
+    if (method !== 'GET') {
+      if (json !== undefined && Object.keys(json).length > 0) {
+        requestBody = JSON.stringify(json)
+        mergedHeaders.set('Content-Type', 'application/json')
+      } else if (body) {
+        requestBody = body
       }
     }
 
-    const response = await fetch(url, {
+    const fetchOptions = {
       method,
       headers: mergedHeaders,
       body: requestBody,
-      signal,
       ...rest,
-    })
+    }
+
+    let fetchPromise: Promise<Response>
+
+    if (timeout > 0) {
+      const signals = [AbortSignal.timeout(timeout)]
+      if (userSignal) {
+        signals.push(userSignal)
+      }
+      const mergedSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0]
+
+      fetchPromise = fetch(url, {
+        ...fetchOptions,
+        signal: mergedSignal,
+      })
+    } else {
+      fetchPromise = fetch(url, {
+        ...fetchOptions,
+        signal: userSignal,
+      })
+    }
+
+    const response = await fetchPromise
 
     if (!response.ok) {
       throw new HttpError(method, url, response.status, response)
     }
 
-    let data: T | undefined
+    let data: T | string | Blob | ArrayBuffer | undefined
     if (responseType === 'json') {
-      data = await response.json()
+      data = (await response.json()) as T
     } else if (responseType === 'blob') {
-      data = (await response.blob()) as T
+      data = await response.blob()
     } else if (responseType === 'text') {
-      data = (await response.text()) as T
+      data = await response.text()
     } else if (responseType === 'arrayBuffer') {
-      data = (await response.arrayBuffer()) as T
+      data = await response.arrayBuffer()
     } else {
       throw new RequestError(`Unsupported responseType: ${responseType}`)
     }
 
-    const miniResponse: MiniFetchResponse<T> = Object.assign(response, { data })
-    return miniResponse
+    const miniFetchResponse: MiniFetchResponse<T> = Object.assign(response, { data })
+    return miniFetchResponse
   } catch (error: unknown) {
-    if (!(error instanceof Error) || error instanceof RequestError) {
-      throw error
-    }
-    if (error.name === 'AbortError' || error.message.includes('aborted')) {
-      if (timeout > 0 && abortController?.signal.aborted) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      if (timeout > 0 && (!userSignal || !userSignal.aborted)) {
         throw new TimeoutError(method, url, timeout)
       }
+      throw new RequestError('Request aborted')
+    }
+    if (error instanceof RequestError) {
       throw error
     }
-    throw new RequestError(error.message)
-  } finally {
-    if (abortTimer !== null) {
-      clearTimeout(abortTimer)
+    if (error instanceof Error) {
+      throw new RequestError(error.message)
     }
+    throw new RequestError(String(error))
   }
 }

@@ -3,8 +3,10 @@
     "target": "es2020",
     "module": "esnext",
     "declaration": true,
-    "rootDir": "src",
     "outDir": "dist",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
@@ -13,5 +15,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src"]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }
