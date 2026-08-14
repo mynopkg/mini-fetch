@@ -8,7 +8,7 @@ interface MiniFetchNamespace {
   patch: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
   put: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
   delete: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  create: (baseUrl?: string, defaultOptions?: MiniFetchOptions) => MiniFetchClient
+  create: (baseUrl?: string) => MiniFetchClient
 }
 
 export class MiniFetchClient {

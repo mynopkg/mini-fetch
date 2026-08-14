@@ -13,6 +13,7 @@ export async function miniFetch<T = unknown>(
     headers,
     body,
     json,
+    signal: userSignal,
     ...rest
   } = options || {}
 
@@ -20,14 +21,14 @@ export async function miniFetch<T = unknown>(
     const mergedHeaders = new Headers(headers)
     let requestBody: BodyInit | undefined
 
-    if (body && json) {
+    if (body !== undefined && json !== undefined) {
       throw new RequestError(
         "Cannot specify both 'body' and 'json'. Use only one or leave both undefined.",
       )
     }
 
     if (method !== 'GET') {
-      if (json && Object.keys(json).length > 0 && !body) {
+      if (json !== undefined && Object.keys(json).length > 0) {
         requestBody = JSON.stringify(json)
         mergedHeaders.set('Content-Type', 'application/json')
       } else if (body) {
@@ -45,15 +46,21 @@ export async function miniFetch<T = unknown>(
     let fetchPromise: Promise<Response>
 
     if (timeout > 0) {
-      const abortController = new AbortController()
-      const timeoutId = setTimeout(() => abortController.abort(), timeout)
+      const signals = [AbortSignal.timeout(timeout)]
+      if (userSignal) {
+        signals.push(userSignal)
+      }
+      const mergedSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0]
 
       fetchPromise = fetch(url, {
         ...fetchOptions,
-        signal: abortController.signal,
-      }).finally(() => clearTimeout(timeoutId))
+        signal: mergedSignal,
+      })
     } else {
-      fetchPromise = fetch(url, fetchOptions)
+      fetchPromise = fetch(url, {
+        ...fetchOptions,
+        signal: userSignal,
+      })
     }
 
     const response = await fetchPromise
@@ -75,11 +82,14 @@ export async function miniFetch<T = unknown>(
       throw new RequestError(`Unsupported responseType: ${responseType}`)
     }
 
-    const miniResponse: MiniFetchResponse<T> = Object.assign(response, { data })
-    return miniResponse
+    const miniFetchResponse: MiniFetchResponse<T> = Object.assign(response, { data })
+    return miniFetchResponse
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new TimeoutError(method, url, timeout)
+      if (timeout > 0 && (!userSignal || !userSignal.aborted)) {
+        throw new TimeoutError(method, url, timeout)
+      }
+      throw new RequestError('Request aborted')
     }
     if (error instanceof RequestError) {
       throw error
