@@ -35,20 +35,25 @@ export async function miniFetch<T = unknown>(
       }
     }
 
-    let fetchPromise = fetch(url, {
+    const fetchOptions = {
       method,
       headers: mergedHeaders,
       body: requestBody,
       ...rest,
-    })
+    }
+
+    let fetchPromise: Promise<Response>
 
     if (timeout > 0) {
-      fetchPromise = Promise.race([
-        fetchPromise,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new TimeoutError(method, url, timeout)), timeout),
-        ),
-      ])
+      const abortController = new AbortController()
+      const timeoutId = setTimeout(() => abortController.abort(), timeout)
+
+      fetchPromise = fetch(url, {
+        ...fetchOptions,
+        signal: abortController.signal,
+      }).finally(() => clearTimeout(timeoutId))
+    } else {
+      fetchPromise = fetch(url, fetchOptions)
     }
 
     const response = await fetchPromise
@@ -73,6 +78,9 @@ export async function miniFetch<T = unknown>(
     const miniResponse: MiniFetchResponse<T> = Object.assign(response, { data })
     return miniResponse
   } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new TimeoutError(method, url, timeout)
+    }
     if (error instanceof RequestError) {
       throw error
     }
