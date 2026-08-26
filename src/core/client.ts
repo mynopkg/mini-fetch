@@ -1,62 +1,53 @@
-import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
+import type { MiniFetchOptions } from '@/types/MiniFetch'
 
+import { combineHeaders, combineUrl } from './helpers'
 import { miniFetch } from './miniFetch'
 
-interface MiniFetchNamespace {
-  get: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  post: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  patch: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  put: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  delete: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  create: (baseUrl?: string) => MiniFetchClient
+export const get = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'GET' })
+
+export const post = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'POST' })
+
+export const put = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'PUT' })
+
+export const patch = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'PATCH' })
+
+export const del = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'DELETE' })
+
+export const head = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
+  miniFetch<T>(endpoint, { ...options, method: 'HEAD' })
+
+export const create = (baseUrl?: string, defaultOptions?: MiniFetchOptions) => {
+  const request = <T = unknown>(endpoint: string, options?: MiniFetchOptions) => {
+    const mergedUrl = combineUrl(endpoint, baseUrl)
+    const mergedHeaders = combineHeaders(defaultOptions?.headers, options?.headers)
+    const mergedOptions: MiniFetchOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: mergedHeaders,
+    }
+    return miniFetch<T>(mergedUrl, mergedOptions)
+  }
+
+  return {
+    request,
+    get: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'GET' }),
+    post: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'POST' }),
+    put: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'PUT' }),
+    patch: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'PATCH' }),
+    del: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'DELETE' }),
+    head: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
+      request<T>(endpoint, { ...opts, method: 'HEAD' }),
+  }
 }
 
-export class MiniFetchClient {
-  constructor(private baseUrl?: string) {}
-
-  private async request<T = unknown>(url: string, options?: MiniFetchOptions) {
-    const mergedUrl = this.baseUrl
-      ? `${this.baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`
-      : url
-
-    return miniFetch<T>(mergedUrl, options)
-  }
-
-  get<T = unknown>(url: string, options?: MiniFetchOptions) {
-    return this.request<T>(url, { ...options, method: 'GET' })
-  }
-
-  post<T = unknown>(url: string, options?: MiniFetchOptions) {
-    return this.request<T>(url, { ...options, method: 'POST' })
-  }
-
-  patch<T = unknown>(url: string, options?: MiniFetchOptions) {
-    return this.request<T>(url, { ...options, method: 'PATCH' })
-  }
-
-  put<T = unknown>(url: string, options?: MiniFetchOptions) {
-    return this.request<T>(url, { ...options, method: 'PUT' })
-  }
-
-  delete<T = unknown>(url: string, options?: MiniFetchOptions) {
-    return this.request<T>(url, { ...options, method: 'DELETE' })
-  }
-
-  static create(baseUrl?: string) {
-    return new MiniFetchClient(baseUrl)
-  }
-}
-
-export const miniFetchClient: typeof miniFetch & MiniFetchNamespace = Object.assign(miniFetch, {
-  get: <T = unknown>(url: string, options?: MiniFetchOptions) =>
-    miniFetch<T>(url, { ...options, method: 'GET' }),
-  post: <T = unknown>(url: string, options?: MiniFetchOptions) =>
-    miniFetch<T>(url, { ...options, method: 'POST' }),
-  patch: <T = unknown>(url: string, options?: MiniFetchOptions) =>
-    miniFetch<T>(url, { ...options, method: 'PATCH' }),
-  put: <T = unknown>(url: string, options?: MiniFetchOptions) =>
-    miniFetch<T>(url, { ...options, method: 'PUT' }),
-  delete: <T = unknown>(url: string, options?: MiniFetchOptions) =>
-    miniFetch<T>(url, { ...options, method: 'DELETE' }),
-  create: (baseUrl?: string) => new MiniFetchClient(baseUrl),
-})
+export type MiniFetchClientType = ReturnType<typeof create>
