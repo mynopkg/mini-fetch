@@ -80,31 +80,54 @@ await miniFetch(url, {
 })
 ```
 
-### `miniFetchClient` — pre-configured instance with helper methods
+### Helper methods
 
 ```typescript
-import { miniFetchClient } from '@mynopkg/mini-fetch'
+import { get, post, put, patch, del, head } from '@mynopkg/mini-fetch'
 
-const res = await miniFetchClient.get<User[]>('https://api.example.com/users')
-await miniFetchClient.post('https://api.example.com/users', { json: { name: 'Jane Doe' } })
-
-// Create a new client instance with baseUrl
-const api = miniFetchClient.create('https://api.example.com')
-await api.get<User[]>('/users')
-await api.post('/users', { json: { name: 'Jane Doe' } })
-await api.delete('/users/1')
+// Use helper methods directly
+const users = await get<User[]>('https://api.example.com/users')
+await post('https://api.example.com/users', { json: { name: 'Jane Doe' } })
+await del('https://api.example.com/users/1')
 ```
 
-### `MiniFetchClient` — custom client with baseUrl
+### `create()` — pre-configured client instance
+
+Create a reusable client instance with a base URL and default options:
 
 ```typescript
-import { MiniFetchClient } from '@mynopkg/mini-fetch'
+import { create } from '@mynopkg/mini-fetch'
 
-const api = new MiniFetchClient('https://api.example.com')
+// Simple instance with baseUrl
+const api = create('https://api.example.com')
 
 await api.get<User[]>('/users')
 await api.post('/users', { json: { name: 'Jane Doe' } })
-await api.delete('/users/1')
+await api.put('/users/1', { json: { name: 'John Doe' } })
+await api.patch('/users/1', { json: { name: 'Johnny' } })
+await api.del('/users/1')
+await api.head('/users')
+```
+
+#### With default options (headers, timeout, etc.)
+
+```typescript
+const api = create('https://api.example.com', {
+  headers: {
+    Authorization: 'Bearer token123',
+    'Content-Type': 'application/json',
+  },
+  timeout: 5000,
+})
+
+// Headers and timeout are applied to all requests
+await api.get<User[]>('/users')
+
+// Override or extend default headers per request
+await api.post('/users', {
+  json: { name: 'Jane Doe' },
+  headers: { 'X-Custom-Header': 'value' }, // merged with defaults
+})
 ```
 
 ## Error Handling
@@ -129,14 +152,15 @@ try {
 
 ## Options
 
-| Option         | Type                                    | Default        | Description             |
-| -------------- | --------------------------------------- | -------------- | ----------------------- |
-| `method`       | `GET \| POST \| PUT \| PATCH \| DELETE` | `GET`          | HTTP method             |
-| `body`         | `any`                                   | —              | Request body            |
-| `headers`      | `HeadersInit`                           | —              | Request headers         |
-| `responseType` | `json \| text \| blob \| arrayBuffer`   | `json`         | Response parsing type   |
-| `timeout`      | `number`                                | `0` (disabled) | Timeout in milliseconds |
-| `signal`       | `AbortSignal`                           | —              | External abort signal   |
+| Option         | Type                                              | Default        | Description                  |
+| -------------- | ------------------------------------------------- | -------------- | ---------------------------- |
+| `method`       | `GET \| POST \| PUT \| PATCH \| DELETE \| HEAD`   | `GET`          | HTTP method                  |
+| `body`         | `BodyInit`                                        | —              | Request body                 |
+| `json`         | `Record<string, unknown> \| unknown[]`            | —              | Auto-serialized to JSON body |
+| `headers`      | `HeadersInit`                                     | —              | Request headers              |
+| `responseType` | `json \| text \| blob \| arrayBuffer \| formData` | `json`         | Response parsing type        |
+| `timeout`      | `number`                                          | `0` (disabled) | Timeout in milliseconds      |
+| `signal`       | `AbortSignal`                                     | —              | External abort signal        |
 
 ## License
 
