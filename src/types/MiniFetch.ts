@@ -1,5 +1,5 @@
 export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'HEAD'
-export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer'
+export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer' | 'formData'
 
 export interface MiniFetchRequest extends Omit<RequestInit, 'body' | 'method'> {
   body?: BodyInit
@@ -7,19 +7,11 @@ export interface MiniFetchRequest extends Omit<RequestInit, 'body' | 'method'> {
 }
 
 export interface MiniFetchResponse<T = unknown> extends Response {
-  data?: T | string | Blob | ArrayBuffer
+  data?: T | string | Blob | ArrayBuffer | FormData
 }
 
 export interface MiniFetchOptions extends MiniFetchRequest {
   responseType?: MiniFetchResponseType
   method?: MiniFetchMethodType
   timeout?: number
-}
-
-export interface MiniFetchApi {
-  get: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  post: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  patch: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  put: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
-  delete: <T = unknown>(url: string, options?: MiniFetchOptions) => Promise<MiniFetchResponse<T>>
 }

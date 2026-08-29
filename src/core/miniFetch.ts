@@ -1,9 +1,11 @@
 import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
 
+import { combineHeaders } from './helpers'
+
 import { HttpError, TimeoutError, RequestError } from '@/errors'
 
 export async function miniFetch<T = unknown>(
-  url: string,
+  endpoint: string,
   options?: MiniFetchOptions,
 ): Promise<MiniFetchResponse<T>> {
   const {
@@ -18,7 +20,7 @@ export async function miniFetch<T = unknown>(
   } = options || {}
 
   try {
-    const mergedHeaders = new Headers(headers)
+    const mergedHeaders = combineHeaders(headers)
     let requestBody: BodyInit | undefined
 
     if (body !== undefined && json !== undefined) {
@@ -27,10 +29,12 @@ export async function miniFetch<T = unknown>(
       )
     }
 
-    if (method !== 'GET') {
+    if (method !== 'GET' && method !== 'HEAD') {
       if (json !== undefined && Object.keys(json).length > 0) {
         requestBody = JSON.stringify(json)
-        mergedHeaders.set('Content-Type', 'application/json')
+        if (!mergedHeaders.has('Content-Type')) {
+          mergedHeaders.set('Content-Type', 'application/json')
+        }
       } else if (body) {
         requestBody = body
       }
@@ -52,12 +56,12 @@ export async function miniFetch<T = unknown>(
       }
       const mergedSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0]
 
-      fetchPromise = fetch(url, {
+      fetchPromise = fetch(endpoint, {
         ...fetchOptions,
         signal: mergedSignal,
       })
     } else {
-      fetchPromise = fetch(url, {
+      fetchPromise = fetch(endpoint, {
         ...fetchOptions,
         signal: userSignal,
       })
@@ -66,11 +70,13 @@ export async function miniFetch<T = unknown>(
     const response = await fetchPromise
 
     if (!response.ok) {
-      throw new HttpError(method, url, response.status, response)
+      throw new HttpError(method, endpoint, response.status, response)
     }
 
-    let data: T | string | Blob | ArrayBuffer | undefined
-    if (responseType === 'json') {
+    let data: T | string | Blob | ArrayBuffer | FormData | undefined
+    if (response.status === 204 || response.headers?.get('content-length') === '0') {
+      data = undefined
+    } else if (responseType === 'json') {
       data = (await response.json()) as T
     } else if (responseType === 'blob') {
       data = await response.blob()
@@ -78,6 +84,8 @@ export async function miniFetch<T = unknown>(
       data = await response.text()
     } else if (responseType === 'arrayBuffer') {
       data = await response.arrayBuffer()
+    } else if (responseType === 'formData') {
+      data = await response.formData()
     } else {
       throw new RequestError(`Unsupported responseType: ${responseType}`)
     }
@@ -87,7 +95,7 @@ export async function miniFetch<T = unknown>(
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       if (timeout > 0 && (!userSignal || !userSignal.aborted)) {
-        throw new TimeoutError(method, url, timeout)
+        throw new TimeoutError(method, endpoint, timeout)
       }
       throw new RequestError('Request aborted')
     }
@@ -95,8 +103,13 @@ export async function miniFetch<T = unknown>(
       throw error
     }
     if (error instanceof Error) {
-      throw new RequestError(error.message)
+      const requestError = new RequestError(error.message)
+      requestError.cause = error
+      if (error.stack) {
+        requestError.stack = error.stack
+      }
+      throw requestError
     }
-    throw new RequestError(String(error))
+    throw new Error(typeof error === 'string' ? error : 'Unknown error occurred')
   }
 }
