@@ -103,7 +103,12 @@ export async function miniFetch<T = unknown>(
       throw error
     }
     if (error instanceof Error) {
-      throw error
+      const requestError = new RequestError(error.message)
+      requestError.cause = error
+      if (error.stack) {
+        requestError.stack = error.stack
+      }
+      throw requestError
     }
     throw new Error(typeof error === 'string' ? error : 'Unknown error occurred')
   }
