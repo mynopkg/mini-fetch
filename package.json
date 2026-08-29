@@ -35,7 +35,7 @@
   ],
   "author": "mynolog <https://github.com/mynolog>",
   "license": "ISC",
-  "description": "A minimal TypeScript fetch wrapper for API calls",
+  "description": "A minimal TypeScript HTTP client based on the Native Fatch API",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mynopkg/mini-fetch.git"
