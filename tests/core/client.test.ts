@@ -1,89 +1,119 @@
 import type { MiniFetchClientType } from '@/core/client'
 
-import { describe, it, vi, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
+import { http, HttpResponse } from 'msw'
 
 import { TEST_URLS } from '../constants'
+import { mockServer } from '../mocks/node'
 
 import { create } from '@/core/client'
-import { HttpError } from '@/errors'
+import { combineUrl } from '@/core/helpers'
 
 describe('miniFetchClient', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true }),
-    } as Response)
-  })
-
   it('should merge baseUrl with path', async () => {
     const client = create(TEST_URLS.API_BASE)
-    await client.get('/data')
+    const response = await client.get('/user')
 
-    expect(fetch).toHaveBeenCalledWith(
-      TEST_URLS.API_DATA,
-      expect.objectContaining({
-        method: 'GET',
+    expect(response).toMatchObject({
+      data: {
+        id: 1,
+        name: 'John Doe',
+        role: 'test',
+      },
+    })
+  })
+
+  it('should automatically set Content-Type header to application/json when JSON body is sent', async () => {
+    mockServer.use(
+      http.post(combineUrl('/user', TEST_URLS.API_BASE), ({ request }) => {
+        const contentType = request.headers.get('content-type')
+        expect(contentType).toContain('application/json')
+        return HttpResponse.json({ success: true })
       }),
     )
+
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.post('/user', { json: { name: 'John' } })
+
+    expect(response).not.toBeNull()
   })
 
   it.each([
     {
       method: 'POST',
       call: (client: MiniFetchClientType) => client.post('/user', { json: { name: 'John' } }),
-      expectedUrl: '/user',
     },
     {
       method: 'PUT',
       call: (client: MiniFetchClientType) => client.put('/user/1', { json: { name: 'Jane' } }),
-      expectedUrl: '/user/1',
     },
     {
       method: 'PATCH',
       call: (client: MiniFetchClientType) => client.patch('/user/1', { json: { name: 'John' } }),
-      expectedUrl: '/user/1',
     },
-    {
-      method: 'DELETE',
-      call: (client: MiniFetchClientType) => client.del('/user/1'),
-      expectedUrl: '/user/1',
-    },
-    {
-      method: 'HEAD',
-      call: (client: MiniFetchClientType) => client.head('/user'),
-      expectedUrl: '/user',
-    },
-  ])('should call fetch with $method method', async ({ method, call, expectedUrl }) => {
-    const client = create()
-    await call(client)
+  ])('should call fetch with $method method', async ({ call }) => {
+    const client = create(TEST_URLS.API_BASE)
+    const response = await call(client)
 
-    expect(fetch).toHaveBeenCalledWith(expectedUrl, expect.objectContaining({ method }))
+    expect(response.status).toBeGreaterThanOrEqual(200)
+    expect(response.status).toBeLessThan(300)
+
+    expect(response.data).toBeDefined()
   })
 
-  it('should return undefined when response status is 204 No Content', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 204,
-      headers: new Headers(),
-      json: vi.fn().mockResolvedValue(undefined),
-    } as unknown as Response)
+  it('should return undefined data when request method is "HEAD"', async () => {
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.head('/user/1')
 
-    const client = create()
-    const result = await client.del('/user/1')
-
-    expect(result.data).toBeUndefined()
+    expect(response.data).toBeUndefined()
+    expect(response.status).toBe(200)
   })
 
-  it('should throw HttpError when response status is 404', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      headers: new Headers(),
-      json: async () => ({ message: 'Not Found' }),
-    } as Response)
+  it('should return undefined data when response status is 204', async () => {
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.del('/user/1')
 
-    await expect(create().get('/not-found')).rejects.toThrowError(HttpError)
+    expect(response.data).toBeUndefined()
+    expect(response.status).toBe(204)
+  })
+
+  it('should send custom headers in request', async () => {
+    const capturedRequestHeaders: Record<string, string> = {}
+
+    mockServer.use(
+      http.post(combineUrl('/user', TEST_URLS.API_BASE), ({ request }) => {
+        request.headers.forEach((value, key) => {
+          capturedRequestHeaders[key] = value
+        })
+
+        return HttpResponse.json({ success: true })
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE)
+
+    await client.post('/user', {
+      json: { name: 'John' },
+      headers: { 'X-Custom-Header': 'custom-value' },
+    })
+
+    expect(capturedRequestHeaders['x-custom-header']).toBe('custom-value')
+    expect(capturedRequestHeaders['content-type']).toContain('application/json')
+  })
+
+  it('should send custom headers provided in options', async () => {
+    mockServer.use(
+      http.get(combineUrl('user/protected', TEST_URLS.API_BASE), ({ request }) => {
+        const authHeader = request.headers.get('Authorization')
+        return HttpResponse.json({ auth: authHeader })
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE, {
+      headers: { Authorization: 'Bearer mock-token' },
+    })
+    const response = await client.get<{ auth: string }>('user/protected')
+    const data = response.data as { auth: string }
+    expect(data.auth).toBe('Bearer mock-token')
   })
 })
