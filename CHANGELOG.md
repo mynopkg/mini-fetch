@@ -1,5 +1,14 @@
 # @mynopkg/mini-fetch
 
+## 0.4.1
+
+### Patch Changes
+
+- [#25](https://github.com/mynopkg/mini-fetch/pull/25) [`206b39f`](https://github.com/mynopkg/mini-fetch/commit/206b39fee10ebb9cafe19343246e17694c8d5b10) Thanks [@mynolog](https://github.com/mynolog)! - MSW (Mock Service Worker) to improve the testing environment and fixes header handling and response parsing issues in the miniFetch and client modules.
+  - Established MSW-based Mock Testing Environment: Introduced the msw package and configured vitest.setup.ts to manage the API mocking lifecycle globally across test runs.
+  - Refactored Core Logic & Resolved Bugs: Switched to standard Headers instances in miniFetch to fix header merging issues and updated response parsing to correctly return undefined for HEAD requests and 204 responses.
+  - Enhanced CI/CD & Integration Tests: Replaced manual fetch mocking with MSW integration tests and configured workflow path ignores for documentation to prevent unnecessary CI runs.
+
 ## 0.4.0
 
 ### Minor Changes
