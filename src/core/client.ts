@@ -30,6 +30,7 @@ export const create = (baseUrl?: string, defaultOptions?: MiniFetchOptions) => {
       ...options,
       headers: mergedHeaders,
     }
+
     return miniFetch<T>(mergedUrl, mergedOptions)
   }
 

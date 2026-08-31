@@ -1,7 +1,5 @@
 import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
 
-import { combineHeaders } from './helpers'
-
 import { HttpError, TimeoutError, RequestError } from '@/errors'
 
 export async function miniFetch<T = unknown>(
@@ -20,7 +18,7 @@ export async function miniFetch<T = unknown>(
   } = options || {}
 
   try {
-    const mergedHeaders = combineHeaders(headers)
+    const requestHeaders = new Headers(headers)
     let requestBody: BodyInit | undefined
 
     if (body !== undefined && json !== undefined) {
@@ -32,8 +30,8 @@ export async function miniFetch<T = unknown>(
     if (method !== 'GET' && method !== 'HEAD') {
       if (json !== undefined && Object.keys(json).length > 0) {
         requestBody = JSON.stringify(json)
-        if (!mergedHeaders.has('Content-Type')) {
-          mergedHeaders.set('Content-Type', 'application/json')
+        if (!requestHeaders.has('Content-Type')) {
+          requestHeaders.set('Content-Type', 'application/json')
         }
       } else if (body) {
         requestBody = body
@@ -42,7 +40,7 @@ export async function miniFetch<T = unknown>(
 
     const fetchOptions = {
       method,
-      headers: mergedHeaders,
+      headers: requestHeaders,
       body: requestBody,
       ...rest,
     }
@@ -74,7 +72,11 @@ export async function miniFetch<T = unknown>(
     }
 
     let data: T | string | Blob | ArrayBuffer | FormData | undefined
-    if (response.status === 204 || response.headers?.get('content-length') === '0') {
+    if (
+      method === 'HEAD' ||
+      response.status === 204 ||
+      response.headers?.get('content-length') === '0'
+    ) {
       data = undefined
     } else if (responseType === 'json') {
       data = (await response.json()) as T
