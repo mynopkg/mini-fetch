@@ -113,7 +113,69 @@ describe('miniFetchClient', () => {
       headers: { Authorization: 'Bearer mock-token' },
     })
     const response = await client.get<{ auth: string }>('user/protected')
-    const data = response.data as { auth: string }
-    expect(data.auth).toBe('Bearer mock-token')
+    expect(response.data?.auth).toBe('Bearer mock-token')
+  })
+
+  it('should correctly infer text response type', async () => {
+    mockServer.use(
+      http.get(combineUrl('/content', TEST_URLS.API_BASE), () => {
+        return HttpResponse.text('Hello, World!')
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.get<string, 'text'>('/content', {
+      responseType: 'text',
+    })
+
+    expect(response.data).toBe('Hello, World!')
+    expect(typeof response.data).toBe('string')
+  })
+
+  it('should correctly infer blob response type', async () => {
+    mockServer.use(
+      http.get(combineUrl('/file', TEST_URLS.API_BASE), () => {
+        return HttpResponse.arrayBuffer(new ArrayBuffer(10))
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.get<Blob, 'blob'>('/file', {
+      responseType: 'blob',
+    })
+
+    expect(response.data).toBeInstanceOf(Blob)
+  })
+
+  it('should correctly infer arrayBuffer response type', async () => {
+    mockServer.use(
+      http.get(combineUrl('/binary', TEST_URLS.API_BASE), () => {
+        const buffer = new ArrayBuffer(8)
+        return HttpResponse.arrayBuffer(buffer)
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.get<ArrayBuffer, 'arrayBuffer'>('/binary', {
+      responseType: 'arrayBuffer',
+    })
+
+    expect(response.data).toBeInstanceOf(ArrayBuffer)
+  })
+
+  it('should correctly infer json response type with generic', async () => {
+    mockServer.use(
+      http.get(combineUrl('/user/typed', TEST_URLS.API_BASE), () => {
+        return HttpResponse.json({ id: 42, name: 'John' })
+      }),
+    )
+
+    const client = create(TEST_URLS.API_BASE)
+    const response = await client.get<{ id: number; name: string }, 'json'>('/user/typed', {
+      responseType: 'json',
+    })
+
+    expect(response.data?.id).toBe(42)
+    expect(response.data?.name).toBe('John')
   })
 })

@@ -1,53 +1,100 @@
-import type { MiniFetchOptions } from '@/types/MiniFetch'
+import type {
+  MiniFetchMethodType,
+  MiniFetchOptions,
+  MiniFetchResponseType,
+} from '@/types/MiniFetch'
 
 import { combineHeaders, combineUrl } from './helpers'
 import { miniFetch } from './miniFetch'
 
-export const get = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'GET' })
+/**
+ * Merge options with HTTP method
+ * Helper to reduce repetitive type assertions in method shortcuts
+ */
+const withMethod = <R extends MiniFetchResponseType = 'json'>(
+  options: MiniFetchOptions<R> | undefined,
+  method: MiniFetchMethodType,
+): MiniFetchOptions<R> =>
+  ({
+    ...options,
+    method,
+  }) as MiniFetchOptions<R>
 
-export const post = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'POST' })
+export const get = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'GET'))
 
-export const put = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'PUT' })
+export const post = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'POST'))
 
-export const patch = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'PATCH' })
+export const put = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'PUT'))
 
-export const del = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'DELETE' })
+export const patch = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'PATCH'))
 
-export const head = <T = unknown>(endpoint: string, options?: MiniFetchOptions) =>
-  miniFetch<T>(endpoint, { ...options, method: 'HEAD' })
+export const del = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'DELETE'))
 
-export const create = (baseUrl?: string, defaultOptions?: MiniFetchOptions) => {
-  const request = <T = unknown>(endpoint: string, options?: MiniFetchOptions) => {
+export const head = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+  endpoint: string,
+  options?: MiniFetchOptions<R>,
+) => miniFetch<T, R>(endpoint, withMethod(options, 'HEAD'))
+
+export const create = (
+  baseUrl?: string,
+  defaultOptions?: MiniFetchOptions<MiniFetchResponseType>,
+) => {
+  const request = <T = unknown, R extends MiniFetchResponseType = 'json'>(
+    endpoint: string,
+    options?: MiniFetchOptions<R>,
+  ) => {
     const mergedUrl = combineUrl(endpoint, baseUrl)
     const mergedHeaders = combineHeaders(defaultOptions?.headers, options?.headers)
-    const mergedOptions: MiniFetchOptions = {
+    const mergedOptions: MiniFetchOptions<R> = {
       ...defaultOptions,
       ...options,
       headers: mergedHeaders,
-    }
+    } as MiniFetchOptions<R>
 
-    return miniFetch<T>(mergedUrl, mergedOptions)
+    return miniFetch<T, R>(mergedUrl, mergedOptions)
   }
 
   return {
     request,
-    get: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'GET' }),
-    post: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'POST' }),
-    put: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'PUT' }),
-    patch: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'PATCH' }),
-    del: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'DELETE' }),
-    head: <T = unknown>(endpoint: string, opts?: MiniFetchOptions) =>
-      request<T>(endpoint, { ...opts, method: 'HEAD' }),
+    get: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'GET')),
+    post: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'POST')),
+    put: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'PUT')),
+    patch: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'PATCH')),
+    del: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'DELETE')),
+    head: <T = unknown, R extends MiniFetchResponseType = 'json'>(
+      endpoint: string,
+      opts?: MiniFetchOptions<R>,
+    ) => request<T, R>(endpoint, withMethod(opts, 'HEAD')),
   }
 }
 
