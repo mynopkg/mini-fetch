@@ -1,11 +1,11 @@
-import type { MiniFetchOptions, MiniFetchResponse } from '@/types/MiniFetch'
+import type { MiniFetchOptions, MiniFetchResponse, MiniFetchResponseType } from '@/types/MiniFetch'
 
 import { HttpError, TimeoutError, RequestError } from '@/errors'
 
-export async function miniFetch<T = unknown>(
+export async function miniFetch<T = unknown, R extends MiniFetchResponseType = 'json'>(
   endpoint: string,
-  options?: MiniFetchOptions,
-): Promise<MiniFetchResponse<T>> {
+  options?: MiniFetchOptions<R>,
+): Promise<MiniFetchResponse<T, R>> {
   const {
     responseType = 'json',
     timeout = 0,
@@ -71,28 +71,38 @@ export async function miniFetch<T = unknown>(
       throw new HttpError(method, endpoint, response.status, response)
     }
 
-    let data: T | string | Blob | ArrayBuffer | FormData | undefined
+    let data: unknown
     if (
       method === 'HEAD' ||
       response.status === 204 ||
       response.headers?.get('content-length') === '0'
     ) {
       data = undefined
-    } else if (responseType === 'json') {
-      data = (await response.json()) as T
-    } else if (responseType === 'blob') {
-      data = await response.blob()
-    } else if (responseType === 'text') {
-      data = await response.text()
-    } else if (responseType === 'arrayBuffer') {
-      data = await response.arrayBuffer()
-    } else if (responseType === 'formData') {
-      data = await response.formData()
     } else {
-      throw new RequestError(`Unsupported responseType: ${responseType}`)
+      switch (responseType) {
+        case 'json':
+          data = await response.json()
+          break
+        case 'blob':
+          data = await response.blob()
+          break
+        case 'text':
+          data = await response.text()
+          break
+        case 'arrayBuffer':
+          data = await response.arrayBuffer()
+          break
+        case 'formData':
+          data = await response.formData()
+          break
+        default:
+          throw new RequestError(`Unsupported responseType: ${responseType}`)
+      }
     }
 
-    const miniFetchResponse: MiniFetchResponse<T> = Object.assign(response, { data })
+    const miniFetchResponse: MiniFetchResponse<T, R> = Object.assign(response, {
+      data,
+    }) as unknown as MiniFetchResponse<T, R>
     return miniFetchResponse
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {

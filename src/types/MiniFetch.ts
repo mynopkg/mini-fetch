@@ -1,17 +1,27 @@
+export type MiniFetchResponseDataMap<T = unknown> = {
+  json: T
+  text: string
+  blob: Blob
+  arrayBuffer: ArrayBuffer
+  formData: FormData
+}
+export type MiniFetchResponseType = keyof MiniFetchResponseDataMap
+
 export type MiniFetchMethodType = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'HEAD'
-export type MiniFetchResponseType = 'json' | 'blob' | 'text' | 'arrayBuffer' | 'formData'
 
 export interface MiniFetchRequest extends Omit<RequestInit, 'body' | 'method'> {
   body?: BodyInit
   json?: Record<string, unknown> | unknown[]
 }
 
-export interface MiniFetchResponse<T = unknown> extends Response {
-  data?: T | string | Blob | ArrayBuffer | FormData
+export interface MiniFetchResponse<T = unknown, R extends MiniFetchResponseType = 'json'>
+  extends Response {
+  data?: MiniFetchResponseDataMap<T>[R]
 }
 
-export interface MiniFetchOptions extends MiniFetchRequest {
-  responseType?: MiniFetchResponseType
+export interface MiniFetchOptions<R extends MiniFetchResponseType = 'json'>
+  extends MiniFetchRequest {
+  responseType?: R
   method?: MiniFetchMethodType
   timeout?: number
 }
