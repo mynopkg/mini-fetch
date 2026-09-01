@@ -1,5 +1,11 @@
 # @mynopkg/mini-fetch
 
+## 0.4.2
+
+### Patch Changes
+
+- [#27](https://github.com/mynopkg/mini-fetch/pull/27) [`d6553e8`](https://github.com/mynopkg/mini-fetch/commit/d6553e8f199b13d27c46fa3dbcf6d404fcb110dd) Thanks [@mynolog](https://github.com/mynolog)! - Improve `responseType.data` type inference based on `responseType` option using conditional mapping.
+
 ## 0.4.1
 
 ### Patch Changes
