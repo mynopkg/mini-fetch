@@ -16,7 +16,7 @@ export interface MiniFetchRequest extends Omit<RequestInit, 'body' | 'method'> {
 
 export interface MiniFetchResponse<T = unknown, R extends MiniFetchResponseType = 'json'>
   extends Response {
-  data?: MiniFetchResponseDataMap<T>[R]
+  data?: R extends 'json' ? T : MiniFetchResponseDataMap<T>[R]
 }
 
 export interface MiniFetchOptions<R extends MiniFetchResponseType = 'json'>

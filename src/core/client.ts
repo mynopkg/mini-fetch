@@ -1,4 +1,8 @@
-import type { MiniFetchOptions, MiniFetchResponseType } from '@/types/MiniFetch'
+import type {
+  MiniFetchMethodType,
+  MiniFetchOptions,
+  MiniFetchResponseType,
+} from '@/types/MiniFetch'
 
 import { combineHeaders, combineUrl } from './helpers'
 import { miniFetch } from './miniFetch'
@@ -9,7 +13,7 @@ import { miniFetch } from './miniFetch'
  */
 const withMethod = <R extends MiniFetchResponseType = 'json'>(
   options: MiniFetchOptions<R> | undefined,
-  method: string,
+  method: MiniFetchMethodType,
 ): MiniFetchOptions<R> =>
   ({
     ...options,
@@ -46,7 +50,10 @@ export const head = <T = unknown, R extends MiniFetchResponseType = 'json'>(
   options?: MiniFetchOptions<R>,
 ) => miniFetch<T, R>(endpoint, withMethod(options, 'HEAD'))
 
-export const create = (baseUrl?: string, defaultOptions?: MiniFetchOptions) => {
+export const create = (
+  baseUrl?: string,
+  defaultOptions?: MiniFetchOptions<MiniFetchResponseType>,
+) => {
   const request = <T = unknown, R extends MiniFetchResponseType = 'json'>(
     endpoint: string,
     options?: MiniFetchOptions<R>,
